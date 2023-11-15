@@ -1,0 +1,34 @@
+# STEP 2 Creating Secret Files
+#secret_variables=$(env | grep '^SECRET_' | cut -d= -f1)
+
+# Loop through the secret variables and create files
+#for env_var in $secret_variables; do
+ #   value="$(eval echo \$$env_var)" 
+ #   filename="${env_var#SECRET_}.txt"
+ #   echo "$filename : $value "
+ #   echo "$value" > ${NIFI_TOOLKIT_HOME}/params/$filename
+#done
+
+# STEP 3 REGISTRY STEPS
+#echo 'baseUrl=http://ec2-54-244-108-162.us-west-2.compute.amazonaws.com:18080' >> #$#{NIFI_TOOLKIT_HOME}/conf/cli-reg.properties
+#${NIFI_TOOLKIT_HOME}/bin/cli.sh session set nifi.reg.props ${NIFI_TOOLKIT_HOME}/conf/cli-#reg.properties
+#BUCKET_ID=$(${NIFI_TOOLKIT_HOME}/bin/cli.sh registry list-buckets |grep Emp_Integrations |awk #'{print $3}') #----> Emp_Integrations is variable
+#FLOW_IDENTIFIER=$(${NIFI_TOOLKIT_HOME}/bin/cli.sh registry list-flows --bucketIdentifier $BUCKET_ID #| grep S3_Extraction | awk '{print $3}') #----> #Serviceberry is variable
+#echo "================> Apache Registry is try to register <================" 
+#REGISTRY_CLIENT_ID=$(${NIFI_TOOLKIT_HOME}/bin/cli.sh nifi create-reg-client --registryClientName #Gopichand --registryClientUrl http://#ec2-54-244-108-162.us-#swest-2.compute.amazonaws.com:18080)
+#echo "================> Registration id : $REGISTRY_CLIENT_ID <================"
+#echo "================> Started importing your Work Flow <================"
+#PG_IMPORTED_ID=$(${NIFI_TOOLKIT_HOME}/bin/cli.sh nifi pg-import --bucketIdentifier $BUCKET_ID --#flowIdentifier $FLOW_IDENTIFIER --flowVersion 1 | #tail -n 1) #FLOW_VERSION
+#echo "================> Imported Work Flow Id : $PG_IMPORTED_ID  <================"
+#echo "================> Stared Enabling the Services Below you check Details   <================"
+#${NIFI_TOOLKIT_HOME}/bin/cli.sh nifi pg-enable-services --processGroupId $PG_IMPORTED_ID -verbose
+#PARAMETER_ID=$(${NIFI_TOOLKIT_HOME}/bin/cli.sh nifi list-param-contexts | awk 'NR==4{print $2}')
+#echo "================> Importing your Secrete_keys you check below for details <================"
+#PARAMETER_PROVIDER_ID=$(${NIFI_TOOLKIT_HOME}/bin/cli.sh nifi list-param-contexts | awk 'NR>3 {print #$4}')
+#${NIFI_TOOLKIT_HOME}/bin/cli.sh nifi set-param-provider-property --paramProviderId #$PARAMETER_PROVIDER_ID --propertyName parameter-group-#directories --propertyValue #$#{NIFI_TOOLKIT_HOME}/params
+#${NIFI_TOOLKIT_HOME}/bin/cli.sh nifi set-param-provider-property --paramProviderId #$PARAMETER_PROVIDER_ID --propertyName parameter-value-encoding #--propertyValue plaintext
+##${NIFI_TOOLKIT_HOME}/bin/cli.sh nifi fetch-params  --paramProviderId $PARAMETER_PROVIDER_ID --#applyParameters
+#Sleep 5
+#echo "================> your WorkFlow has been staring in 3  2  1  <================"
+#echo "================> WorkFlow started Enjoy the services 😊  <================"
+#${NIFI_TOOLKIT_HOME}/bin/cli.sh nifi pg-start --processGroupId $PG_IMPORTED_ID
