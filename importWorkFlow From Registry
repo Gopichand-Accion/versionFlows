@@ -1,0 +1,60 @@
+pipeline {
+    agent any
+    
+    environment {
+        SECRET_FILE = credentials("${SECRET_FILE_ID}")
+    }
+
+    stages {
+        stage('Create Files from Secret Properties') {
+            steps {
+                script {
+                    def secretFile = env.SECRET_FILE
+                    def containerPath = '/opt/nifi/nifi-toolkit-current/params'
+
+                    def secretFileContent = readFile(secretFile)
+                    print secretFileContent
+
+                    def lines = secretFileContent.readLines()
+
+                    lines.each { line ->
+                        if (!line.trim().startsWith('#') && line.contains('=')) {
+                            def indexOfEquals = line.indexOf('=')
+                            if (indexOfEquals > 0) {
+                                def key = line.substring(0, indexOfEquals).trim()
+                                def value = line.substring(indexOfEquals + 1).trim()
+
+                                // Directly create a file in the Docker container
+                                sh "echo '${value}' | docker exec -i DEV bash -c 'cat > ${containerPath}/${key}'"
+                                echo "File created in Docker container for key: ${key}"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        stage('Run Registry'){
+            steps('Step 1'){
+                script {
+                    sh("""
+                    export BUCKET_IDENTIFIER=`docker exec \${env} /opt/nifi/nifi-toolkit-current/bin/cli.sh registry list-buckets | grep -w Emp_Integrations | awk '{print \$3}'` &&
+                    echo \${BUCKET_IDENTIFIER} &&
+                    export FLOW_IDENTIFIER=`docker exec \${env} /opt/nifi/nifi-toolkit-current/bin/cli.sh registry list-flows --bucketIdentifier \${BUCKET_IDENTIFIER} | grep -w \${FLOW_NAME} | awk '{print \$3}'` &&
+                    echo \${FLOW_IDENTIFIER} &&
+                    export  REGISTRY_CLIENT_ID=`docker exec \${env} /opt/nifi/nifi-toolkit-current/bin/cli.sh nifi create-reg-client --registryClientName \${REG_CLIENT_NAME} --registryClientUrl \${REG_URL}`&& 
+                    export PG_IMPORTED_ID=`docker exec \${env} /opt/nifi/nifi-toolkit-current/bin/cli.sh nifi pg-import --bucketIdentifier \${BUCKET_IDENTIFIER} --flowIdentifier \${FLOW_IDENTIFIER} --flowVersion \${FLOW_VERSION} | tail -n 1`
+                    echo '####### PG Imported with Success\n'
+                    echo `docker exec \${env} /opt/nifi/nifi-toolkit-current/bin/cli.sh nifi pg-enable-services --processGroupId \${PG_IMPORTED_ID}`&&
+                    export PARAMETER_ID=`docker exec \${env} /opt/nifi/nifi-toolkit-current/bin/cli.sh nifi list-param-contexts | awk 'NR==4{print \$2}'`&&
+                    echo \${PARAMETER_ID}&&
+                    export PARAMETER_PROVIDER_ID=`docker exec \${env} /opt/nifi/nifi-toolkit-current/bin/cli.sh nifi list-param-contexts | awk 'NR>3 {print \$4}'`&&
+                    echo \${PARAMETER_PROVIDER_ID}&&
+                    echo `docker exec \${env} /opt/nifi/nifi-toolkit-current/bin/cli.sh nifi set-param-provider-property  --paramProviderId \${PARAMETER_PROVIDER_ID} --propertyName parameter-group-directories --propertyValue \${Dir_to_Key}` &&
+                    echo `docker exec \${env} /opt/nifi/nifi-toolkit-current/bin/cli.sh nifi set-param-provider-property --paramProviderId \${PARAMETER_PROVIDER_ID} --propertyName parameter-value-encoding  --propertyValue plaintext`&&
+                    echo `docker exec \${env} /opt/nifi/nifi-toolkit-current/bin/cli.sh nifi fetch-params  --paramProviderId \${PARAMETER_PROVIDER_ID} --applyParameters`&&
+                    //echo `docker exec \${env} /opt/nifi/nifi-toolkit-current/bin/cli.sh nifi pg-start --processGroupId \${PG_IMPORTED_ID}`
+                    """)
+                }
+            }
+        }
+    }
