@@ -1,0 +1,27 @@
+rm -rf temp_repo
+#!/bin/bash
+
+# Clone the Git repository
+git clone https://github.com/Gopichand-03/versionFlows.git temp_repo
+cd temp_repo || exit
+
+# Get the latest commit within the last 1 minute
+latestCommit=$(git log --since='1 minute ago' --format="%H" -n 1)
+
+# Debugging output
+echo "Latest commit within the last 1 minute: $latestCommit"
+
+if [ -n "$latestCommit" ]; then
+    # Get the list of changed files in the latest commit
+    changedFiles=$(git diff-tree --no-commit-id --name-only -r "$latestCommit")
+
+    # Debugging output
+    echo "Changed files within the last 1 minute:"
+    echo "$changedFiles"
+else
+    echo "No changed files within the last 1 minute"
+fi
+
+# Clean up - remove the temporary repository
+cd ..
+rm -rf temp_repo
